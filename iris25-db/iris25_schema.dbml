@@ -42,6 +42,7 @@ Table Book {
   genre_id integer [not null, ref: > Genre.genre_id]    // Mandatory FK: each book sits in exactly one genre
   total_chapters integer                                // Helps compute progress percentages per chapter
   year_published integer                                // Metadata for filtering/sorting
+  edition text
   added_at datetime [default: CURRENT_TIMESTAMP]        // When the book is added (for record keeping)
 }
 
@@ -72,6 +73,7 @@ Table Note {
   user_id integer [ref: > User.user_id]               // 1:N: user may leave many notes
   book_id integer [ref: > Book.book_id]               // 1:N: book accumulates notes from different users
   chapter_number integer [not null]                   // Required anchor so every note is tied to a specific chapter
+  page_number integer
   content text                                        // Free-form text body of the note
   created_at datetime [default: CURRENT_TIMESTAMP]    // Timestamp to sort notes chronologically
 }

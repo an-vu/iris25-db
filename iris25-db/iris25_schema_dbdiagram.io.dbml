@@ -33,6 +33,7 @@ Table Book {
   genre_id integer [not null, ref: > Genre.genre_id]
   total_chapters integer
   year_published integer
+  edition text
   added_at datetime [default: "CURRENT_TIMESTAMP"]
 }
 
@@ -56,6 +57,7 @@ Table Note {
   user_id integer [ref: > User.user_id]
   book_id integer [ref: > Book.book_id]
   chapter_number integer [not null]
+  page_number integer
   content text
   created_at datetime [default: "CURRENT_TIMESTAMP"]
 }
