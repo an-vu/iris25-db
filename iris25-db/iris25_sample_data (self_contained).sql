@@ -1,7 +1,15 @@
 -- ============================================================
--- Iris '25 Sample Data
--- Run after: iris25_sql_specification_ddl.sql
+-- Iris '25 Sample Data  (Self-Contained Version)
+-- Includes minor ALTER TABLE updates for edition + page_number
+-- mysql -u root -p iris_reader < iris25_sample_data.sql
 -- ============================================================
+
+-- ====== SCHEMA UPDATES ======
+ALTER TABLE Book 
+ADD COLUMN IF NOT EXISTS edition VARCHAR(50);
+
+ALTER TABLE Note 
+ADD COLUMN IF NOT EXISTS page_number INT;
 
 -- ===== USERS =====
 INSERT INTO User (username, email, role, created_at)
@@ -94,5 +102,5 @@ VALUES
 (3, TRUE, 'Dognese, Shibanese');
 
 -- ============================================================
--- End of iris25_sample_data.sql
+-- End of iris25_sample_data.sql  (Self-Contained Version)
 -- ============================================================

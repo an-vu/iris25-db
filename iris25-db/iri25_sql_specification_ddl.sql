@@ -53,6 +53,7 @@ CREATE TABLE Book (
   genre_id INT NOT NULL,
   total_chapters INT,
   year_published INT,
+  edition VARCHAR(50),
   added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE SET NULL,
   FOREIGN KEY (genre_id) REFERENCES Genre(genre_id) ON DELETE RESTRICT
@@ -91,6 +92,7 @@ CREATE TABLE Note (
   user_id INT NOT NULL,
   book_id INT NOT NULL,
   chapter_number INT NOT NULL,
+  page_number INT,
   content TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
