@@ -1,0 +1,113 @@
+// Iris Reader '25 Database
+
+// ================================================================
+// Relationships Overview
+// ================================================================
+
+// User <-> Book (1:N) - One user can upload many books, but each book belongs to one user.
+
+// Book <-> Author (M:N) - A book can have many authors, and each author can write many books.
+// Book <-> Genre (1:N) - Each book belongs to one genre, but each genre can include many books.
+
+// User <-> Book via Progress (M:N) - Each user can read many books, and each book can be read by many users.
+// User <-> Note <-> Book (1:N both ways) - Notes connect users and books; one user can write many notes, and one book can have many notes.
+// User <-> UserSettings (1:1) - Each user has exactly one set of app settings (dark mode, language).
+
+// ================================================================
+// Table Definitions
+// ================================================================
+
+Table User {
+  user_id integer [pk]
+  username text [unique, not null]                    // Natural identifier; unique to prevent duplicates
+  email text [unique, not null]                       // Used for notifications/login; must be unique and present
+  role text                                           // Simple enum-ish text describing permissions (user/dev/admin)
+  created_at datetime [default: CURRENT_TIMESTAMP]
+}
+
+Table Author {
+  author_id integer [pk]
+  name text [not null]      // Required because an author must have a name (duh...)
+}
+
+Table Genre {
+  genre_id integer [pk]
+  name text [unique, not null]
+}
+
+Table Book {
+  book_id integer [pk]
+  user_id integer [ref: > User.user_id]                 // Optional FK: uploader/owner (1 user : many books)
+  title text [not null]
+  genre_id integer [not null, ref: > Genre.genre_id]    // Mandatory FK: each book sits in exactly one genre
+  total_chapters integer                                // Helps compute progress percentages per chapter
+  year_published integer                                // Metadata for filtering/sorting
+  added_at datetime [default: CURRENT_TIMESTAMP]        // When the book is added (for record keeping)
+}
+
+// Since a book can have many authors and one author can write many books,
+// we use BookAuthor as an M:N bridge between the Book and Author tables.
+// The Author table stores each person once, while BookAuthor connects
+// them together without duplicating data.
+Table BookAuthor {
+  book_id integer [ref: > Book.book_id]         // Part of composite key; many records share a Book
+  author_id integer [ref: > Author.author_id]   // Part of composite key; many records share an Author
+  primary key (book_id, author_id)              // M:N bridge - Ensures each book-author pair is unique (no duplicates)
+}
+
+// Tracks how far each user is through a book
+// This is a bridge table between User and Book tables
+Table Progress {
+  user_id integer [ref: > User.user_id]                                 // 1:N: one user produces many progress rows across books
+  book_id integer [ref: > Book.book_id]                                 // 1:N: each book can have progress rows from many users
+  percent_complete real [default: 0, note: "Value between 0 and 100"]   // Stores 0-100% completion metric (defaults to 0)
+  time_spent integer [default: 0]                                       // Optional; aggregates total reading time per book (non-negative)
+  last_updated datetime [default: CURRENT_TIMESTAMP]                    // Lets UI show when progress was last synced
+  primary key (user_id, book_id)
+}
+
+// User-authored annotations tied to books/chapters
+Table Note {
+  note_id integer [pk]                                // Unique per note for referencing/editing
+  user_id integer [ref: > User.user_id]               // 1:N: user may leave many notes
+  book_id integer [ref: > Book.book_id]               // 1:N: book accumulates notes from different users
+  chapter_number integer [not null]                   // Required anchor so every note is tied to a specific chapter
+  content text                                        // Free-form text body of the note
+  created_at datetime [default: CURRENT_TIMESTAMP]    // Timestamp to sort notes chronologically
+}
+
+// Added to create a 1:1 relationship.
+// Each user has exactly one set of app preferences (dark mode, language).
+Table UserSettings {
+  user_id integer [pk, ref: > User.user_id]
+  dark_mode boolean   // TRUE (1) or FALSE (0) — on/off setting
+  language text
+}
+
+// ================================================================
+// Referential Integrity Rules
+// ================================================================
+
+// If an uploader is removed, keep the book but drop ownership
+Ref: Book.user_id > User.user_id [delete: set null]
+
+// Prevent deleting a genre that still has books assigned
+Ref: Book.genre_id > Genre.genre_id [delete: restrict]
+
+// Removing a book clears all of its author links
+Ref: BookAuthor.book_id > Book.book_id [delete: cascade]
+
+// Removing an author clears bridge rows
+Ref: BookAuthor.author_id > Author.author_id [delete: cascade]
+
+// Removing a user wipes their progress records
+Ref: Progress.user_id > User.user_id [delete: cascade]
+
+// Removing a book wipes all progress tied to it
+Ref: Progress.book_id > Book.book_id [delete: cascade]
+
+// Removing a user removes their notes
+Ref: Note.user_id > User.user_id [delete: cascade]
+
+// Removing a book removes its related notes
+Ref: Note.book_id > Book.book_id [delete: cascade]
