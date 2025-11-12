@@ -1,6 +1,7 @@
 # Iris Reader '25 Database
 
-Relational schema, sample data, and design collateral for the Iris Reader '25 project (CSCI 4850/8856 Database Management Systems). The data model captures users, the books they upload, multi-author relationships, reading progress, personal notes, and per-user app settings.
+- Relational schema, sample data, and design collateral for the Iris Reader '25 project (CSCI 4850/8856 Database Management Systems).
+- The data model captures users, the books they upload, multi-author relationships, reading progress, personal notes, and per-user app settings.
 
 ## Repository contents
 
