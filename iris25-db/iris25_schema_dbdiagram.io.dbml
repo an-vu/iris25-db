@@ -1,0 +1,68 @@
+// Iris Reader '25
+
+// Relationships
+// User -> Book (1:N)
+// Book -> Author (M:N)
+// Book -> Genre (1:N)
+// User -> Book via Progress (M:N)
+// User -> Note -> Book (1:N both directions)
+// User -> UserSettings (1:1)
+
+Table User {
+  user_id integer [pk]
+  username text [unique, not null]
+  email text [unique, not null]
+  role text
+  created_at datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table Author {
+  author_id integer [pk]
+  name text [not null]
+}
+
+Table Genre {
+  genre_id integer [pk]
+  name text [unique, not null]
+}
+
+Table Book {
+  book_id integer [pk]
+  user_id integer [ref: > User.user_id]
+  title text [not null]
+  genre_id integer [not null, ref: > Genre.genre_id]
+  total_chapters integer
+  year_published integer
+  added_at datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table BookAuthor {
+  book_id integer [ref: > Book.book_id]
+  author_id integer [ref: > Author.author_id]
+  primary key (book_id, author_id)
+}
+
+Table Progress {
+  user_id integer [ref: > User.user_id]
+  book_id integer [ref: > Book.book_id]
+  percent_complete real [default: 0, note: "Value between 0 and 100"]
+  time_spent integer [default: 0]
+  last_updated datetime [default: "CURRENT_TIMESTAMP"]
+  primary key (user_id, book_id)
+}
+
+Table Note {
+  note_id integer [pk]
+  user_id integer [ref: > User.user_id]
+  book_id integer [ref: > Book.book_id]
+  chapter_number integer [not null]
+  content text
+  created_at datetime [default: "CURRENT_TIMESTAMP"]
+}
+
+Table UserSettings {
+  user_id integer [pk, ref: > User.user_id]
+  dark_mode boolean
+  language text
+}
+
