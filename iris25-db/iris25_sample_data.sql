@@ -1,6 +1,7 @@
 -- ============================================================
 -- Iris '25 Sample Data
--- Run after: iris25_sql_specification_ddl.sql
+-- Run iris25_sql_specification_ddl.sql first to set up the schema.
+-- Then execute iris25_sample_data.sql to populate it.
 -- ============================================================
 
 -- ===== USERS =====
