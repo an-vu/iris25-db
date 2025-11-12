@@ -2,8 +2,7 @@
 -- Iris Reader '25 Database Schema
 -- by An Vu
 -- Target DBMS: MySQL
--- SQL DDL for all tables and relationships
--- Defines all tables, primary keys, and foreign key constraints
+-- SQL DDL for tables, keys, and relationships
 -- ============================================================
 
 -- Drop existing tables (safeguard for re-runs)
