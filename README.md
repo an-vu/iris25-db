@@ -3,13 +3,13 @@
 Relational schema, sample data, and SQL query set for the **Iris Reader ’25** system.  
 Originally built for CSCI 4850-8856 Database Management Systems Final Project.
 
-- The data model covers:
-  - Users
-  - Uploaded books
-  - Multi-author relationships
-  - Reading progress tracking
-  - Per-user notes (chapter + page level)
-  - User app settings (dark mode, language)
+The data model covers:
+- Users
+- Uploaded books
+- Multi-author relationships
+- Reading progress tracking
+- Per-user notes (chapter + page level)
+- User app settings (dark mode, language)
 
 ---
 
@@ -81,8 +81,8 @@ SELECT COUNT(*) FROM UserSettings;
 
 ### 5. Running Queries
 
-Open query.sql, pick any query, and paste it directly into the MySQL terminal.
+- Open query.sql, pick any query, and paste it directly into the MySQL terminal.
 
-No additional setup required.
+- No additional setup required.
 
 ---
