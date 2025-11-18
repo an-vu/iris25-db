@@ -1,6 +1,6 @@
 # Iris Reader ’25 Database
 
-Relational schema, sample data, and SQL query set for the **Iris Reader ’25** system.  
+Relational schema, sample data, and SQL query set for **[Iris Reader ’25](https://github.com/an-vu/iris25)**.  
 Originally built for CSCI 4850-8856 Database Management Systems Final Project.
 
 The data model covers:
