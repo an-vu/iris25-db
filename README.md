@@ -38,8 +38,8 @@ USE iris_reader;
 - Load DDL first, then data.
 
 ```sql
-SOURCE iris25_sql_specification_ddl.sql;
-SOURCE iris25_sample_data.sql;
+SOURCE /path/to/iris25_sql_specification_ddl.sql;
+SOURCE /path/to/iris25_sample_data.sql;
 ```
 
 #### Option B — Self-Contained Method (One File)
