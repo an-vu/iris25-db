@@ -10,8 +10,8 @@
 DROP DATABASE iris_reader;
 CREATE DATABASE iris_reader;
 USE iris_reader;
-SOURCE table_creation.sql;
-SOURCE data_insertion.sql;
+SOURCE /Users/an/Documents/School/2025/3-Fall 2025/CSCI 4850-8856 Database Management Systems/Project/GitHub/iris25-db/04-sql-queries/table_creation.sql;
+SOURCE /Users/an/Documents/School/2025/3-Fall 2025/CSCI 4850-8856 Database Management Systems/Project/GitHub/iris25-db/04-sql-queries/data_insertion.sql;
 
    ============================================================ */
 
@@ -48,10 +48,64 @@ FROM Genre
 ORDER BY name;
 
 /* ============================================================
+   B. Constraint Enforcement Master Block
+   ============================================================ */
+
+-- 4. Demonstrates:
+--    PRIMARY KEY enforcement
+--    UNIQUE constraint enforcement
+--    CHECK constraint enforcement
+--    FOREIGN KEY constraint enforcement
+
+-- Create table with PK, UNIQUE, CHECK
+CREATE TABLE DemoConstraints (
+  id INT PRIMARY KEY,
+  code VARCHAR(10) UNIQUE,
+  rating INT CHECK (rating BETWEEN 1 AND 5)
+);
+
+-- Valid insert
+INSERT INTO DemoConstraints VALUES (1, 'A1', 5);
+
+-- PRIMARY KEY violation (should FAIL)
+INSERT INTO DemoConstraints VALUES (1, 'B1', 3);
+
+-- UNIQUE constraint violation (should FAIL)
+INSERT INTO DemoConstraints VALUES (2, 'A1', 4);
+
+-- CHECK constraint violation (should FAIL)
+INSERT INTO DemoConstraints VALUES (3, 'C1', 12);
+
+
+-- Parent + Child tables for FOREIGN KEY demonstration
+CREATE TABLE ParentDemo (
+  parent_id INT PRIMARY KEY
+);
+
+CREATE TABLE ChildDemo (
+  child_id INT PRIMARY KEY,
+  parent_id INT,
+  FOREIGN KEY (parent_id) REFERENCES ParentDemo(parent_id)
+);
+
+-- Valid parent + valid child
+INSERT INTO ParentDemo VALUES (100);
+INSERT INTO ChildDemo VALUES (1, 100);
+
+-- FOREIGN KEY violation (should FAIL)
+INSERT INTO ChildDemo VALUES (2, 999);
+
+
+-- Cleanup
+DROP TABLE ChildDemo;
+DROP TABLE ParentDemo;
+DROP TABLE DemoConstraints;
+
+/* ============================================================
    B. Joins – All Join Types From Chapter 4 (10 queries)
    ============================================================ */
 
--- 4. Show each book with its genre name.
+-- 5. Show each book with its genre name.
 --    NATURAL JOIN joins tables automatically on same-named columns
 SELECT
   title, name AS genre_name
@@ -59,7 +113,7 @@ FROM Book
 
 NATURAL JOIN Genre;
 
--- 5. Show each book with its author(s)
+-- 6. Show each book with its author(s)
 --    JOIN USING joins tables by matching columns with the same name
 --    USING(book_id) links Book to BookAuthor
 --    USING(author_id) links BookAuthor to Author
@@ -76,10 +130,11 @@ JOIN BookAuthor ba USING (book_id)
 JOIN Author a USING (author_id)
 ORDER BY b.book_id, a.name;
 
--- 6. Show notes along with the username who wrote them
---    INNER JOIN keeps only matching rows:
---    Note -> User (same user_id) and Note -> Book (same book_id).
---    We get only notes that have a valid user and a valid book.
+-- 7. INNER JOIN
+--    Show notes along with the username who wrote them
+--      INNER JOIN keeps only matching rows:
+--      Note -> User (same user_id) and Note -> Book (same book_id).
+--      We get only notes that have a valid user and a valid book.
 SELECT 
   CONCAT(
     u.username, ' wrote "', 
@@ -96,9 +151,10 @@ INNER JOIN User u ON n.user_id = u.user_id
 INNER JOIN Book b ON n.book_id = b.book_id
 \G
 
--- 7. Left outer join: Show all books, include progress if available
---    LEFT OUTER JOIN keeps all books, even ones with no progress.
---    If a book has no matching row in Progress, percent/time show as NULL.
+-- 8. LEFT OUTER JOIN + ORDER BY
+--    Show all books, include progress if available
+--      LEFT OUTER JOIN keeps all books, even ones with no progress.
+--      If a book has no matching row in Progress, percent/time show as NULL.
 SELECT 
   Book.title,
   CONCAT(Progress.percent_complete, '%') AS percent_complete,
@@ -111,10 +167,11 @@ FROM Book
 LEFT JOIN Progress ON Book.book_id = Progress.book_id
 ORDER BY Book.book_id;
 
--- 8. Right outer join: Show all authors, even those with zero books
---    RIGHT JOIN Author keeps all authors, even those with zero books.
---    If an author has no BookAuthor rows, BookAuthor fields become NULL.
---    LEFT JOIN Book attaches book titles when available, NULL otherwise.
+-- 9. RIGHT OUTER JOIN + ORDER BY
+--    Show all authors, even those with zero books
+--      RIGHT JOIN Author keeps all authors, even those with zero books.
+--      If an author has no BookAuthor rows, BookAuthor fields become NULL.
+--      LEFT JOIN Book attaches book titles when available, NULL otherwise.
 SELECT 
   Author.name AS author_name,
   Book.title AS book_title
@@ -124,14 +181,16 @@ RIGHT JOIN Author ON BookAuthor.author_id = Author.author_id
 LEFT JOIN Book ON BookAuthor.book_id = Book.book_id
 ORDER BY Author.author_id;
 
--- 9. Full outer join (simulated): Show all books and all progress entries,
---    including unmatched rows on either side
+-- 10. Full outer join (simulated) + UNION
+--     Show all books and all progress entries, including unmatched rows on either side
+
 (
   SELECT 
     Book.book_id,
     Book.title,
     Progress.percent_complete
   FROM Book
+
   LEFT JOIN Progress ON Book.book_id = Progress.book_id
 )
 UNION
@@ -141,6 +200,7 @@ UNION
     Book.title,
     Progress.percent_complete
   FROM Book
+
   RIGHT JOIN Progress ON Book.book_id = Progress.book_id
 );
 
