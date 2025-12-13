@@ -7,8 +7,8 @@
     DROP DATABASE iris_reader;
     CREATE DATABASE iris_reader;
     USE iris_reader;
-    SOURCE path/to/table_creation.sql;
-    SOURCE path/to/data_insertion.sql;
+    SOURCE /path/to/table_creation.sql;
+    SOURCE /path/to/data_insertion.sql;
 
    ============================================================ */
 
