@@ -2,14 +2,13 @@
     Iris Reader '25 Database – Query Set
     By An Vu
 
+    Run this whenever updating sample data (reset demo DB)
 
-    Run this whenever updating sample data
-
-DROP DATABASE iris_reader;
-CREATE DATABASE iris_reader;
-USE iris_reader;
-SOURCE /Users/an/Documents/School/2025/3-Fall 2025/CSCI 4850-8856 Database Management Systems/Project/GitHub/iris25-db/04-sql-queries/table_creation.sql;
-SOURCE /Users/an/Documents/School/2025/3-Fall 2025/CSCI 4850-8856 Database Management Systems/Project/GitHub/iris25-db/04-sql-queries/data_insertion.sql;
+    DROP DATABASE iris_reader;
+    CREATE DATABASE iris_reader;
+    USE iris_reader;
+    SOURCE path/to/table_creation.sql;
+    SOURCE path/to/data_insertion.sql;
 
    ============================================================ */
 
@@ -26,21 +25,28 @@ USE iris25_demo;
 SOURCE table_creation.sql;
 SOURCE data_insertion.sql;
 
+-- NOTE:
+-- SOURCE only works when the .sql files are in the current MySQL directory
+-- (current working directory of the mysql client when launched)
+-- otherwise use absolute paths (path/to/file)
+
+
 /* ============================================================
    1. Basic select + where + order by
    ============================================================ */
 
 -- Show all books published after 2015, sorted by title
-SELECT book_id, title, published_year
+SELECT book_id, title, year_published
 FROM Book
-WHERE published_year > 2015
+WHERE year_published > 2015
 ORDER BY title ASC;
+
 
 /* ============================================================
    2. DISTINCT + simple projection
    ============================================================ */
 
--- 2. All distinct genres that actually have books
+-- All distinct genres that actually have books
 SELECT DISTINCT g.name AS genre_name
 FROM Book b
 JOIN Genre g ON b.genre_id = g.genre_id
@@ -51,7 +57,7 @@ ORDER BY genre_name;
    3. String operations with LIKE
    ============================================================ */
 
--- 3. Books with "SQL" anywhere in the title
+-- Books with "SQL" anywhere in the title
 SELECT book_id, title
 FROM Book
 WHERE title LIKE '%SQL%';
@@ -61,7 +67,7 @@ WHERE title LIKE '%SQL%';
    4. Inner join 2 tables
    ============================================================ */
 
--- 4. Each book with its genre name
+-- Each book with its genre name
 SELECT b.book_id, b.title, g.name AS genre_name
 FROM Book b
 JOIN Genre g ON b.genre_id = g.genre_id
@@ -72,7 +78,7 @@ ORDER BY b.book_id;
    5. Inner join 3 tables
    ============================================================ */
 
--- 5. Book titles with their authors
+-- Book titles with their authors
 SELECT b.book_id, b.title, a.name AS author_name
 FROM Book b
 JOIN BookAuthor ba ON b.book_id = ba.book_id
@@ -84,30 +90,31 @@ ORDER BY b.book_id, author_name;
    6. Left outer join
    ============================================================ */
 
--- 6. All books, show reading progress if it exists
+-- All books, show reading progress if it exists
 SELECT 
   b.book_id,
   b.title,
   CONCAT(COALESCE(p.percent_complete, 0), '%') AS percent_complete
 FROM Book b
-LEFT JOIN Progress p 
+LEFT JOIN Progress p
   ON b.book_id = p.book_id
-  AND p.username = 'anvu'
+  AND p.user_id = 1
 ORDER BY b.book_id;
-
 
 /* ============================================================
    7. Right outer join
    ============================================================ */
 
--- 7. All users, show any progress rows if available
+-- All users, show any progress rows if available
 SELECT 
   u.username,
   b.title,
-  p.percent_complete
+  CONCAT(COALESCE(p.percent_complete, 0), '%') AS percent_complete
 FROM Progress p
-RIGHT JOIN User u ON p.username = u.username
-LEFT JOIN Book b ON p.book_id = b.book_id
+RIGHT JOIN User u
+  ON p.user_id = u.user_id
+LEFT JOIN Book b
+  ON p.book_id = b.book_id
 ORDER BY u.username, b.title;
 
 
@@ -115,7 +122,7 @@ ORDER BY u.username, b.title;
    8. Aggregation + GROUP BY
    ============================================================ */
 
--- 8. Number of books in each genre
+-- Number of books in each genre
 SELECT 
   g.name AS genre_name,
   COUNT(*) AS book_count
@@ -144,7 +151,7 @@ ORDER BY book_count DESC;
    10. Aggregate without group
    ============================================================ */
 
--- 10. Total counts for key tables
+-- Total counts for key tables
 SELECT 
   (SELECT COUNT(*) FROM User)  AS user_count,
   (SELECT COUNT(*) FROM Book)  AS book_count,
@@ -155,13 +162,14 @@ SELECT
    11. Nested query with IN
    ============================================================ */
 
--- 11. Books that "anvu" has written at least one note for
+-- Books that user "anvu" has written at least one note for
 SELECT b.book_id, b.title
 FROM Book b
 WHERE b.book_id IN (
   SELECT DISTINCT n.book_id
   FROM Note n
-  WHERE n.username = 'anvu'
+  JOIN User u ON n.user_id = u.user_id
+  WHERE u.username = 'anvu'
 )
 ORDER BY b.title;
 
@@ -170,27 +178,27 @@ ORDER BY b.title;
    12. Nested query with NOT IN
    ============================================================ */
 
--- 12. Books that have no notes from any user
+-- Books that have no notes from any user
 SELECT b.book_id, b.title
 FROM Book b
 WHERE b.book_id NOT IN (
   SELECT DISTINCT n.book_id
   FROM Note n
 )
-ORDER BY b.title;
+ORDER BY b.book_id;
 
 
 /* ============================================================
    13. EXISTS correlated subquery
    ============================================================ */
 
--- 13. Users who finished at least one book (100 percent)
+-- Users who finished at least one book (100%)
 SELECT u.username
 FROM User u
 WHERE EXISTS (
   SELECT 1
   FROM Progress p
-  WHERE p.username = u.username
+  WHERE p.user_id = u.user_id
     AND p.percent_complete = 100
 );
 
@@ -199,13 +207,13 @@ WHERE EXISTS (
    14. NOT EXISTS correlated subquery
    ============================================================ */
 
--- 14. Users with no progress records at all
+-- Users with no progress records at all (will show an empty set since all users have some records here)
 SELECT u.username
 FROM User u
 WHERE NOT EXISTS (
   SELECT 1
   FROM Progress p
-  WHERE p.username = u.username
+  WHERE p.user_id = u.user_id
 );
 
 
@@ -213,12 +221,15 @@ WHERE NOT EXISTS (
    15. Subquery in FROM (derived table)
    ============================================================ */
 
--- 15. Users whose average progress is above 50 percent
+-- Users whose average progress is above 50 percent
 SELECT t.username, t.avg_percent
 FROM (
-  SELECT username, AVG(percent_complete) AS avg_percent
-  FROM Progress
-  GROUP BY username
+  SELECT 
+    u.username,
+    AVG(p.percent_complete) AS avg_percent
+  FROM Progress p
+  JOIN User u ON p.user_id = u.user_id
+  GROUP BY u.username
 ) AS t
 WHERE t.avg_percent > 50
 ORDER BY t.avg_percent DESC;
@@ -238,28 +249,30 @@ SELECT
     WHERE n.book_id = b.book_id
   ) AS note_count
 FROM Book b
-ORDER BY note_count DESC, b.title;
+ORDER BY book_id ASC, b.title;
 
 
 /* ============================================================
    17. Set operation using UNION
    ============================================================ */
 
--- 17. All books that "anvu" has either notes or progress on
-SELECT DISTINCT b.book_id, b.title
+-- All books that "anvu" has either notes or progress on
+SELECT b.book_id, b.title
 FROM Book b
 WHERE b.book_id IN (
   SELECT p.book_id
   FROM Progress p
-  WHERE p.username = 'anvu'
+  JOIN User u ON u.user_id = p.user_id
+  WHERE u.username = 'anvu'
 )
 UNION
-SELECT DISTINCT b.book_id, b.title
+SELECT b.book_id, b.title
 FROM Book b
 WHERE b.book_id IN (
   SELECT n.book_id
   FROM Note n
-  WHERE n.username = 'anvu'
+  JOIN User u ON u.user_id = n.user_id
+  WHERE u.username = 'anvu'
 )
 ORDER BY title;
 
@@ -268,14 +281,14 @@ ORDER BY title;
    18. EXCEPT style using LEFT JOIN + IS NULL
    ============================================================ */
 
--- 18. Books in "Database" genre where "anvu" has no progress
+-- Books in a given genre where "anvu" has no progress
 SELECT b.book_id, b.title
 FROM Book b
 JOIN Genre g ON b.genre_id = g.genre_id
-LEFT JOIN Progress p 
+LEFT JOIN Progress p
   ON p.book_id = b.book_id
-  AND p.username = 'anvu'
-WHERE g.name = 'Database'
+  AND p.user_id = (SELECT user_id FROM User WHERE username = 'anvu')
+WHERE g.name = 'Computers & Technology'
   AND p.book_id IS NULL
 ORDER BY b.title;
 
@@ -284,20 +297,24 @@ ORDER BY b.title;
    19. WITH clause (CTE)
    ============================================================ */
 
--- 19. Users whose total reading time is above the average total time
+-- Users whose total reading time is above the average total time
 WITH user_totals AS (
-  SELECT username, SUM(time_spent) AS total_minutes
-  FROM Progress
-  GROUP BY username
+  SELECT 
+    u.username,
+    SUM(p.time_spent) AS total_minutes
+  FROM Progress p
+  JOIN User u ON p.user_id = u.user_id
+  GROUP BY u.username
 ),
 avg_total AS (
   SELECT AVG(total_minutes) AS avg_minutes
   FROM user_totals
 )
-SELECT u.username, u.total_minutes
-FROM user_totals u, avg_total a
-WHERE u.total_minutes > a.avg_minutes
-ORDER BY u.total_minutes DESC;
+SELECT ut.username, ut.total_minutes
+FROM user_totals ut
+CROSS JOIN avg_total a
+WHERE ut.total_minutes > a.avg_minutes
+ORDER BY ut.total_minutes DESC;
 
 
 /* ============================================================
@@ -305,14 +322,17 @@ ORDER BY u.total_minutes DESC;
    ============================================================ */
 
 -- 20a. Create view of each user's book progress
+DROP VIEW IF EXISTS UserBookProgress;
+
 CREATE VIEW UserBookProgress AS
 SELECT 
-  p.username,
+  u.username,
   b.book_id,
   b.title,
   p.percent_complete,
   p.time_spent
 FROM Progress p
+JOIN User u ON p.user_id = u.user_id
 JOIN Book b ON p.book_id = b.book_id;
 
 -- 20b. Query the view for one user
@@ -326,50 +346,59 @@ ORDER BY percent_complete DESC;
    21. INSERT … VALUES
    ============================================================ */
 
--- 21. Insert a new book
-INSERT INTO Book (book_id, title, genre_id, uploader_username, published_year)
-VALUES (101, 'SQL For Iris Reader', 3, 'anvu', 2025);
+-- Insert a new book
+INSERT INTO Book (user_id, title, genre_id, year_published)
+VALUES (
+  (SELECT user_id FROM User WHERE username = 'anvu'),
+  'Iris Reader ''25 Manual',
+  3,
+  2025
+);
 
 
 /* ============================================================
    22. INSERT … SELECT (insert from another table)
    ============================================================ */
 
--- 22. For all books in genre "Algorithms", 
--- create a starting progress row for user "anvu" at 0 percent
-INSERT INTO Progress (username, book_id, percent_complete, time_spent)
+-- For all books in genre "Computers & Technology", 
+-- create a starting progress row for user "anvu" at 0%
+INSERT INTO Progress (user_id, book_id, percent_complete, time_spent)
 SELECT 
-  'anvu' AS username,
+  u.user_id,
   b.book_id,
   0 AS percent_complete,
   0 AS time_spent
 FROM Book b
 JOIN Genre g ON b.genre_id = g.genre_id
-WHERE g.name = 'Algorithms'
+JOIN User u ON u.username = 'anvu'
+WHERE g.name = 'Computers & Technology'
   AND NOT EXISTS (
     SELECT 1
     FROM Progress p
-    WHERE p.username = 'anvu'
+    WHERE p.user_id = u.user_id
       AND p.book_id = b.book_id
   );
+
 
 
 /* ============================================================
    23. UPDATE with CASE + subquery
    ============================================================ */
 
--- 23. Give a small boost to progress based on current level
+-- For user anvu, add a small amount of reading time to newer books,
+-- with the amount depending on how far along they already are
 UPDATE Progress p
-SET percent_complete = CASE
-  WHEN percent_complete < 25 THEN percent_complete + 10
-  WHEN percent_complete BETWEEN 25 AND 75 THEN percent_complete + 5
-  ELSE percent_complete
+JOIN User u ON p.user_id = u.user_id
+SET p.time_spent = p.time_spent + CASE
+  WHEN p.percent_complete = 0 THEN 15
+  WHEN p.percent_complete BETWEEN 1 AND 50 THEN 10
+  ELSE 5
 END
-WHERE username = 'anvu'
+WHERE u.username = 'anvu'
   AND p.book_id IN (
-    SELECT book_id
-    FROM Book
-    WHERE published_year >= 2020
+    SELECT b.book_id
+    FROM Book b
+    WHERE b.year_published >= 2020
   );
 
 
@@ -377,12 +406,15 @@ WHERE username = 'anvu'
    24. DELETE with subquery
    ============================================================ */
 
--- 24. Delete notes older than 1 year for books the user never made progress on
-DELETE FROM Note n
-WHERE n.username = 'anvu'
+-- Delete notes older than 1 year for books the user never made progress on
+DELETE n
+FROM Note n
+JOIN User u ON n.user_id = u.user_id
+WHERE u.username = 'anvu'
   AND n.created_at < DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
   AND n.book_id NOT IN (
-    SELECT DISTINCT p.book_id
+    SELECT p.book_id
     FROM Progress p
-    WHERE p.username = 'anvu'
+    WHERE p.user_id = u.user_id
   );
+
